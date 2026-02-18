@@ -683,7 +683,7 @@ earthGroup.add(atmosphere);
 
     // Authentic-ish rotation: Mars sidereal day ~24.6h. We scale for visuals.
     let lastT = performance.now();
-    let spinSpeed = (Math.PI * 2) / 60; // 1 rotation / 60s (looks "authentic" on-screen)
+    let spinSpeed = (Math.PI * 2) / 180; // 1 rotation / 60s (looks "authentic" on-screen)
 
     // subtle camera parallax
     let targetX = 0, targetY = 0;
