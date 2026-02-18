@@ -274,6 +274,12 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .bubble.sys.error {
+  background: rgba(255, 60, 60, 0.15);
+  border-color: rgba(255, 60, 60, 0.35);
+  color: #ffb3b3;
+}
+
     .meta {
       display: flex;
       justify-content: space-between;
@@ -419,6 +425,64 @@
       line-height: 1.4;
     }
 
+    .centerWidget {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(20, 24, 30, 0.45);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  text-align: center;
+  z-index: 3;
+}
+
+.widgetTitle {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 8px;
+}
+
+.widgetTime {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.widgetDate {
+  font-size: 13px;
+  margin-top: 6px;
+  color: rgba(255,255,255,0.6);
+}
+
+    .leftWidget {
+  position: fixed;
+  top: 60px;
+  left: 20px;
+  width: 280px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(20, 24, 30, 0.45);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  z-index: 3;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-top: 6px;
+  color: rgba(255,255,255,0.75);
+}
+
+
     @media (max-width: 860px){
       header { grid-template-columns: 1fr; }
       .corner { align-items: stretch; }
@@ -477,6 +541,12 @@
       </div>
     </div>
   </div>
+
+  <div class="centerWidget" id="centerWidget">
+  <div class="widgetTitle">SYSTEM TIME</div>
+  <div class="widgetTime" id="liveTime">--:--:--</div>
+  <div class="widgetDate" id="liveDate">Loading...</div>
+</div>
 
   <!-- Modern modal (no browser prompt) -->
   <div class="modalBack" id="modalBack">
@@ -789,13 +859,20 @@ amb.intensity = 0.5;
       ui.youLabel.textContent = `You: ${name ? name : "—"}`;
     }
 
-    function addSystem(text){
-      const el = document.createElement('div');
-      el.className = "bubble sys";
-      el.textContent = text;
-      ui.chat.appendChild(el);
-      ui.chat.scrollTop = ui.chat.scrollHeight;
-    }
+  function addSystem(text){
+  const el = document.createElement('div');
+
+  const isError = text.toLowerCase().includes("error") ||
+                  text.toLowerCase().includes("not connected") ||
+                  text.toLowerCase().includes("kicked");
+
+  el.className = "bubble sys" + (isError ? " error" : "");
+  el.textContent = text;
+
+  ui.chat.appendChild(el);
+  ui.chat.scrollTop = ui.chat.scrollHeight;
+}
+
 
     function addBubble({ who, text, mine=false }){
       const wrap = document.createElement('div');
@@ -1164,6 +1241,35 @@ amb.intensity = 0.5;
       addSystem(`Kicked ${victimName}.`);
       return true;
     }
+    
+    function updateClock(){
+  const now = new Date();
+  document.getElementById("liveTime").textContent =
+    now.toLocaleTimeString();
+  document.getElementById("liveDate").textContent =
+    now.toDateString();
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+    // Device Info
+document.getElementById("devicePlatform").textContent =
+  navigator.platform;
+
+document.getElementById("deviceBrowser").textContent =
+  navigator.userAgent.split(" ")[0];
+
+// Public IP fetch
+fetch("https://api.ipify.org?format=json")
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("deviceIP").textContent = data.ip;
+  })
+  .catch(() => {
+    document.getElementById("deviceIP").textContent = "Unavailable";
+  });
+
 
     function sendChat(text){
       const trimmed = text.trim();
