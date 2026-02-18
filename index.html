@@ -1,52 +1,154 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>P2P Private Chat</title>
+  <title>Private P2P Chat</title>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 15px;
+      background: #1e293b;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #chat {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bubble {
+      max-width: 60%;
+      padding: 10px 15px;
+      border-radius: 15px;
+      word-wrap: break-word;
+    }
+
+    .you {
+      background: #3b82f6;
+      align-self: flex-end;
+    }
+
+    .friend {
+      background: #334155;
+      align-self: flex-start;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 10px;
+      background: #1e293b;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    #connectBtn {
+      margin: 10px auto;
+      display: block;
+    }
+  </style>
 </head>
+
 <body>
-<h2>Private P2P Chat</h2>
 
-<textarea id="chat" rows="15" cols="60" readonly></textarea><br>
-<input id="message" placeholder="Type message..." />
-<button onclick="sendMessage()">Send</button>
+<header>🔒 Private P2P Chat</header>
 
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<div id="chat"></div>
+
+<div class="input-area">
+  <input id="message" placeholder="Type message..." autocomplete="off">
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<button id="connectBtn" onclick="connectToPeer()">Connect to Friend</button>
 
 <script>
-const peer = new Peer();
-let conn;
+  const peer = new Peer();
+  let conn;
 
-peer.on('open', id => {
-  alert("Your ID: " + id);
-});
-
-peer.on('connection', connection => {
-  conn = connection;
-  setupConnection();
-});
-
-function connectToPeer() {
-  const id = prompt("Enter Friend ID:");
-  conn = peer.connect(id);
-  setupConnection();
-}
-
-function setupConnection() {
-  conn.on('data', data => {
-    document.getElementById('chat').value += "\nFriend: " + data;
-  });
-}
-
-function sendMessage() {
+  const chatBox = document.getElementById('chat');
   const input = document.getElementById('message');
-  conn.send(input.value);
-  document.getElementById('chat').value += "\nYou: " + input.value;
-  input.value = "";
-}
-</script>
 
-<br><br>
-<button onclick="connectToPeer()">Connect to Friend</button>
+  peer.on('open', id => {
+    alert("Your ID: " + id);
+  });
+
+  peer.on('connection', connection => {
+    conn = connection;
+    setupConnection();
+  });
+
+  function connectToPeer() {
+    const id = prompt("Enter Friend ID:");
+    conn = peer.connect(id);
+    setupConnection();
+  }
+
+  function setupConnection() {
+    conn.on('data', data => {
+      addMessage(data, "friend");
+    });
+  }
+
+  function addMessage(text, type) {
+    const bubble = document.createElement("div");
+    bubble.classList.add("bubble", type);
+    bubble.textContent = text;
+    chatBox.appendChild(bubble);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function sendMessage() {
+    if (!conn || conn.open === false) return alert("Not connected!");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    conn.send(msg);
+    addMessage(msg, "you");
+    input.value = "";
+  }
+
+  // ✅ ENTER KEY SUPPORT
+  input.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+</script>
 
 </body>
 </html>
