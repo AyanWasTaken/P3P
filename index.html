@@ -72,19 +72,28 @@
     }
 
     /* Header */
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      padding: 20px 20px 14px 20px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      align-items: start;
-      backdrop-filter: blur(18px);
-      background: rgba(0,0,0,0.25);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
+   header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 14px 18px 10px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.brand h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.subline {
+  margin-top: 2px;
+  font-size: 12px;
+}
 
     .brand {
       display: flex;
@@ -563,50 +572,62 @@
     scene.add(rim);
 
     // Starfield
-    function makeStars(count = 1200) {
-      const geom = new THREE.BufferGeometry();
-      const pos = new Float32Array(count * 3);
-      for (let i=0; i<count; i++){
-        const r = 450 * Math.random() + 50;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2*Math.random() - 1);
-        pos[i*3+0] = r * Math.sin(phi) * Math.cos(theta);
-        pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-        pos[i*3+2] = r * Math.cos(phi);
-      }
-      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const mat = new THREE.PointsMaterial({ size: 1.2, sizeAttenuation: true, transparent: true, opacity: 0.55 });
-      const pts = new THREE.Points(geom, mat);
-      return pts;
-    }
+ function makeStars(count = 2000) {
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = (Math.random() - 0.5) * 1200;
+    positions[i*3 + 1] = (Math.random() - 0.5) * 1200;
+    positions[i*3 + 2] = (Math.random() - 0.5) * 1200;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: 1.2,
+    color: 0xffffff,
+    sizeAttenuation: true
+  });
+
+  return new THREE.Points(geometry, material);
+}
+
     scene.add(makeStars());
 
     // Mars sphere
-    const mars = new THREE.Mesh(
-      new THREE.SphereGeometry(5.1, 96, 96),
-      new THREE.MeshStandardMaterial({
-        roughness: 0.95,
-        metalness: 0.0
-      })
-    );
-    scene.add(mars);
+ // Better Mars geometry
+const mars = new THREE.Mesh(
+  new THREE.SphereGeometry(5.1, 128, 128),
+  new THREE.MeshStandardMaterial({
+    roughness: 1.0,
+    metalness: 0.0
+  })
+);
+scene.add(mars);
 
-    // Texture (CORS-safe source typically works)
-    const texLoader = new THREE.TextureLoader();
-    const marsTexUrl = "https://threejsfundamentals.org/threejs/resources/images/mars_1k_color.jpg";
-    texLoader.load(
-      marsTexUrl,
-      (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        mars.material.map = tex;
-        mars.material.needsUpdate = true;
-      },
-      undefined,
-      () => {
-        // If texture fails, keep a nice fallback
-        mars.material.color = new THREE.Color(0x7a3b24);
-      }
-    );
+// NASA-style texture
+const loader = new THREE.TextureLoader();
+
+loader.load(
+  "https://planetpixelemporium.com/download/download.php?marsmap1k.jpg",
+  (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    mars.material.map = tex;
+    mars.material.needsUpdate = true;
+  }
+);
+
+// Lighting refinement
+const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(8, 3, 10);
+scene.add(sun);
+
+// Mars axial tilt (25 degrees)
+mars.rotation.z = THREE.MathUtils.degToRad(25);
 
     // Authentic-ish rotation: Mars sidereal day ~24.6h. We scale for visuals.
     let lastT = performance.now();
