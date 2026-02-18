@@ -76,7 +76,7 @@
       position: sticky;
       top: 0;
       z-index: 5;
-      padding: 20px 20px 14px 20px;
+      padding: 14px 18px 10px 18px;
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 16px;
@@ -100,7 +100,7 @@
     }
     .brand h1 {
       margin: 0;
-      font-size: 22px;
+      font-size: 18px;
       letter-spacing: -0.6px;
       font-weight: 650;
     }
@@ -155,7 +155,7 @@
     }
 
     .card {
-      width: 260px;
+      width: 230px;
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,0.10);
       background: var(--panel);
@@ -465,18 +465,6 @@
             <button class="danger" id="leaveBtn">Leave</button>
           </div>
         </div>
-
-        <div class="card">
-          <div class="row">
-            <div class="label">Admin Commands</div>
-            <div class="value">/kick name</div>
-          </div>
-          <div class="row">
-            <div class="label">Tip</div>
-            <div class="value">Shift+Enter = newline</div>
-          </div>
-        </div>
-      </div>
     </header>
 
     <div class="main">
@@ -563,22 +551,54 @@
     scene.add(rim);
 
     // Starfield
-    function makeStars(count = 1200) {
-      const geom = new THREE.BufferGeometry();
-      const pos = new Float32Array(count * 3);
-      for (let i=0; i<count; i++){
-        const r = 450 * Math.random() + 50;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2*Math.random() - 1);
-        pos[i*3+0] = r * Math.sin(phi) * Math.cos(theta);
-        pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-        pos[i*3+2] = r * Math.cos(phi);
+   function makeStars(count = 3000) {
+  const geometry = new THREE.BufferGeometry();
+
+  const positions = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const radius = 800;
+    const theta = Math.random() * 2 * Math.PI;
+    const phi = Math.acos((Math.random() * 2) - 1);
+
+    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+    positions[i * 3 + 2] = radius * Math.cos(phi);
+
+    sizes[i] = Math.random() * 2.5 + 0.5; // star size variation
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const material = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexShader: `
+      attribute float size;
+      varying float vAlpha;
+      void main() {
+        vAlpha = size;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (300.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
       }
-      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const mat = new THREE.PointsMaterial({ size: 1.2, sizeAttenuation: true, transparent: true, opacity: 0.55 });
-      const pts = new THREE.Points(geom, mat);
-      return pts;
-    }
+    `,
+    fragmentShader: `
+      varying float vAlpha;
+      void main() {
+        float dist = distance(gl_PointCoord, vec2(0.5));
+        if (dist > 0.5) discard;
+        float glow = 1.0 - smoothstep(0.0, 0.5, dist);
+        gl_FragColor = vec4(vec3(1.0), glow * 0.9);
+      }
+    `
+  });
+
+  return new THREE.Points(geometry, material);
+}
     scene.add(makeStars());
 
     // Mars sphere
@@ -593,7 +613,7 @@
 
     // Texture (CORS-safe source typically works)
     const texLoader = new THREE.TextureLoader();
-    const marsTexUrl = "https://threejsfundamentals.org/threejs/resources/images/mars_1k_color.jpg";
+    const marsTexUrl = "https://www.solarsystemscope.com/textures/download/4k_mars.jpg";
     texLoader.load(
       marsTexUrl,
       (tex) => {
