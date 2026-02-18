@@ -602,31 +602,35 @@
     scene.add(makeStars());
 
     // Mars sphere
-    const mars = new THREE.Mesh(
-      new THREE.SphereGeometry(5.1, 96, 96),
-      new THREE.MeshStandardMaterial({
-        roughness: 0.95,
-        metalness: 0.0
-      })
-    );
-    scene.add(mars);
+const marsGeometry = new THREE.SphereGeometry(5.1, 128, 128);
 
-    // Texture (CORS-safe source typically works)
-    const texLoader = new THREE.TextureLoader();
-    const marsTexUrl = "https://www.solarsystemscope.com/textures/download/8k_mars.jpg";
-    texLoader.load(
-      marsTexUrl,
-      (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        mars.material.map = tex;
-        mars.material.needsUpdate = true;
-      },
-      undefined,
-      () => {
-        // If texture fails, keep a nice fallback
-        mars.material.color = new THREE.Color(0x7a3b24);
-      }
-    );
+const marsMaterial = new THREE.MeshStandardMaterial({
+  roughness: 1.0,
+  metalness: 0.0
+});
+
+const mars = new THREE.Mesh(marsGeometry, marsMaterial);
+scene.add(mars);
+
+const texLoader = new THREE.TextureLoader();
+texLoader.crossOrigin = "anonymous";
+
+texLoader.load(
+  "https://www.solarsystemscope.com/textures/download/8k_mars.jpg",
+  (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.flipY = false; // IMPORTANT FIX
+    mars.material.map = texture;
+    mars.material.needsUpdate = true;
+  },
+  undefined,
+  (err) => {
+    console.error("Texture failed:", err);
+  }
+);
+
 
     // Authentic-ish rotation: Mars sidereal day ~24.6h. We scale for visuals.
     let lastT = performance.now();
