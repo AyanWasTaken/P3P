@@ -550,56 +550,22 @@
     rim.position.set(-10, -3, -6);
     scene.add(rim);
 
-    // Starfield
-   function makeStars(count = 3000) {
-  const geometry = new THREE.BufferGeometry();
+  const skyGeo = new THREE.SphereGeometry(1500, 64, 64);
 
-  const positions = new Float32Array(count * 3);
-  const sizes = new Float32Array(count);
-
-  for (let i = 0; i < count; i++) {
-    const radius = 800;
-    const theta = Math.random() * 2 * Math.PI;
-    const phi = Math.acos((Math.random() * 2) - 1);
-
-    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = radius * Math.cos(phi);
-
-    sizes[i] = Math.random() * 2.5 + 0.5; // star size variation
+const skyTex = new THREE.TextureLoader().load(
+  "https://threejs.org/examples/textures/2294472375_24a3b8ef46_o.jpg",
+  (texture) => {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
   }
+);
 
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+const skyMat = new THREE.MeshBasicMaterial({
+  map: skyTex,
+  side: THREE.BackSide
+});
 
-  const material = new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexShader: `
-      attribute float size;
-      varying float vAlpha;
-      void main() {
-        vAlpha = size;
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = size * (300.0 / -mvPosition.z);
-        gl_Position = projectionMatrix * mvPosition;
-      }
-    `,
-    fragmentShader: `
-      varying float vAlpha;
-      void main() {
-        float dist = distance(gl_PointCoord, vec2(0.5));
-        if (dist > 0.5) discard;
-        float glow = 1.0 - smoothstep(0.0, 0.5, dist);
-        gl_FragColor = vec4(vec3(1.0), glow * 0.9);
-      }
-    `
-  });
-
-  return new THREE.Points(geometry, material);
-}
-    scene.add(makeStars());
+const sky = new THREE.Mesh(skyGeo, skyMat);
+scene.add(sky);
 
     // Mars sphere
 /*********************
@@ -617,8 +583,8 @@ const earthGeometry = new THREE.SphereGeometry(5.1, 128, 128);
 
 // Material
 const earthMaterial = new THREE.MeshStandardMaterial({
-  roughness: 0.8,
-  metalness: 0.1
+  roughness: 0.6,
+  metalness: 0.0
 });
 
 const earth = new THREE.Mesh(earthGeometry, earthMaterial);
@@ -632,6 +598,7 @@ loader.load(
   "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg",
   (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
     earth.material.map = texture;
     earth.material.needsUpdate = true;
   }
@@ -670,12 +637,13 @@ earthGroup.add(clouds);
 
 // Atmosphere glow
 const atmosphere = new THREE.Mesh(
-  new THREE.SphereGeometry(5.3, 128, 128),
+  new THREE.SphereGeometry(5.35, 128, 128),
   new THREE.MeshBasicMaterial({
     color: 0x4da6ff,
     transparent: true,
-    opacity: 0.08,
-    side: THREE.BackSide
+    opacity: 0.15,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending
   })
 );
 
@@ -683,7 +651,7 @@ earthGroup.add(atmosphere);
 
     // Authentic-ish rotation: Mars sidereal day ~24.6h. We scale for visuals.
     let lastT = performance.now();
-    let spinSpeed = (Math.PI * 2) / 60; // 1 rotation / 60s (looks "authentic" on-screen)
+    let spinSpeed = (Math.PI * 2) / 120; // 1 rotation / 60s (looks "authentic" on-screen)
 
     // subtle camera parallax
     let targetX = 0, targetY = 0;
@@ -698,12 +666,15 @@ earthGroup.add(atmosphere);
       const dt = Math.min((t - lastT) / 1000, 0.05);
       lastT = t;
 
-   earth.rotation.y += 0.15 * dt;
-clouds.rotation.y += 0.18 * dt;
+   earth.rotation.y += 0.25 * dt;
+clouds.rotation.y += 0.3 * dt;
 
-      dir.position.set(20, 10, 20);
-dir.intensity = 2.0;
-amb.intensity = 0.5;
+   const amb = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(amb);
+
+const dir = new THREE.DirectionalLight(0xffffff, 2.5);
+dir.position.set(20, 10, 20);
+scene.add(dir);
 
 
       camera.position.x += (targetX - camera.position.x) * 0.04;
