@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>P2P Private Chat</title>
+</head>
+<body>
+<h2>Private P2P Chat</h2>
+
+<textarea id="chat" rows="15" cols="60" readonly></textarea><br>
+<input id="message" placeholder="Type message..." />
+<button onclick="sendMessage()">Send</button>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+
+<script>
+const peer = new Peer();
+let conn;
+
+peer.on('open', id => {
+  alert("Your ID: " + id);
+});
+
+peer.on('connection', connection => {
+  conn = connection;
+  setupConnection();
+});
+
+function connectToPeer() {
+  const id = prompt("Enter Friend ID:");
+  conn = peer.connect(id);
+  setupConnection();
+}
+
+function setupConnection() {
+  conn.on('data', data => {
+    document.getElementById('chat').value += "\nFriend: " + data;
+  });
+}
+
+function sendMessage() {
+  const input = document.getElementById('message');
+  conn.send(input.value);
+  document.getElementById('chat').value += "\nYou: " + input.value;
+  input.value = "";
+}
+</script>
+
+<br><br>
+<button onclick="connectToPeer()">Connect to Friend</button>
+
+</body>
+</html>
